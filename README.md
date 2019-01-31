@@ -1,3 +1,3 @@
 # matchit
 
-Python fuzzy matching 
+Python fuzzy matching.
