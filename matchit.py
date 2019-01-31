@@ -5,7 +5,7 @@ from fuzzywuzzy import fuzz
 import time
 
 # load data sets, perform filters and set data types
-prop_data = pd.read_csv('./18-19 TAX BOOK FOR WEB.csv')
+prop_data = pd.read_csv('./properties.csv')
 prop_data['Owner Name 1'] = prop_data['Owner Name 1'].apply(lambda x: str(x))
 corps = pd.read_csv('./corps.csv',low_memory=False)
 corps['BUSINESS_NAME'] = corps['BUSINESS_NAME'].apply(lambda x: str(x))
