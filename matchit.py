@@ -4,6 +4,7 @@ pd.options.display.float_format = '{:.2f}'.format
 from fuzzywuzzy import fuzz
 import re
 import time
+
 # define cleaning function
 def clean_it(string):
     # define replace rules
