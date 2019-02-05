@@ -45,7 +45,7 @@ def match_it(series,dataframe):
 
     for value in series:
         # create block
-        startswith = value[:7]
+        startswith = value[:3]
         df = dataframe[dataframe['BUSINESS_NAME'].str.contains(startswith,case=False,na=False)]
 
         for index,row in df.iterrows():
@@ -65,7 +65,7 @@ def match_it(series,dataframe):
 
 start = time.time()
 # load data sets
-prop_data = pd.read_csv('./properties.csv')
+prop_data = pd.read_csv('./properties.csv',low_memory=False)
 corps = pd.read_csv('./corps.csv',low_memory=False)
 
 # run filters, set data types, and perform basic cleaning on strings
