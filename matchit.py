@@ -4,6 +4,7 @@ pd.options.display.float_format = '{:.2f}'.format
 from fuzzywuzzy import fuzz
 import re
 import time
+from random import sample
 
 # define cleaning function
 def clean_it(string):
@@ -23,7 +24,7 @@ def clean_it(string):
 
     # create regex patterns
     pattern = re.compile('|'.join(rep.keys()))
-    the = re.compile(r'\bthe\b',re.I)
+    the = re.compile(r'\bthe\b',re.I) # other stop words?
     multiple_spaces = re.compile(r'\s{2,}')
 
     # run replace
@@ -39,35 +40,73 @@ def clean_it(string):
 ratio = fuzz.ratio
 set_ratio = fuzz.token_set_ratio
 
+# define ngram generator function
+def make_ngrams(string, n):
+    output = []
+    for i in range(len(string)-n+1):
+        output.append(string[i:i+n])
+    return output
+
 # define matching function
 def match_it(series,dataframe):
     matches = []
     append_it = matches.append
 
+    ngram_len = 5
+    rand_sample = 4
+
     for value in series:
-        # create block
-        startswith = value[:3]
-        df = dataframe[dataframe['BUSINESS_NAME'].str.contains(startswith,case=False,na=False)]
+        # flag, checks if there is a match
+        is_match = False
 
-        for index,row in df.iterrows():
-            name = row['BUSINESS_NAME_clean']
+        # blocking w random n-grams from string
+        ngrams = make_ngrams(value,ngram_len) # create ngrams
+        ngrams = sample(ngrams,rand_sample) # grab random sample from ngrams
+        ngrams = '|'.join(ngrams) # join ngrams into single string for regex
 
-            # simple matching
-            if (name == value):
-                append_it(row['BUSINESS_ID'])
+        # pandas filter to create block
+        df = dataframe[dataframe['BUSINESS_NAME'].str.contains(ngrams,case=False,na=False,regex=True)]
 
-            # fuzzy matching
-            elif (ratio(value,name) < 93) or (set_ratio(value,name) < 97):
-                append_it('NA')
+        # try simple matching first
+        for index,row in df.iterrows(): # iterate over rows
+            # check flag, if no matches found yet, keep trying
+            if is_match == False:
+                name = row['BUSINESS_NAME_clean']
+
+                if (name == value):
+                    print(value,name,'PERFECT MATCH')
+                    append_it(row['BUSINESS_ID'])
+                    is_match = True
+
             else:
-                append_it(row['BUSINESS_ID'])
+                break
 
+        # try fuzzy matching
+        for index,row in df.iterrows(): # iterate over rows
+            # check flag, if no matches found yet, keep trying
+            if is_match == False:
+                name = row['BUSINESS_NAME_clean']
+
+                if (ratio(value,name) > 90) and (set_ratio(value,name) > 93):
+                    print(value,name,'FUZZY MATCH')
+                    append_it(row['BUSINESS_ID'])
+                    is_match = True
+
+            else:
+                break
+
+        # after all iterations, if no match is found, return "NA"
+        if is_match == False:
+            print(value,'NO MATCH')
+            append_it('NA')
+
+    # returns pandas Series representing the new column
     return pd.Series(matches)
 
-start = time.time()
 # load data sets
 prop_data = pd.read_csv('./properties.csv',low_memory=False)
 corps = pd.read_csv('./corps.csv',low_memory=False)
+corps_to_principals = pd.read_csv('./corp_to_principals.csv',low_memory=False)
 
 # run filters, set data types, and perform basic cleaning on strings
 prop_data['Owner Name 1_clean'] = prop_data['Owner Name 1'].apply(lambda x: clean_it(str(x)))
@@ -75,6 +114,61 @@ prop_data['Owner Name 1_clean'] = prop_data['Owner Name 1'].apply(lambda x: clea
 corps['BUSINESS_NAME_clean'] = corps['BUSINESS_NAME'].apply(lambda x: clean_it(str(x)))
 
 # call function
+# start = time.time()
+dataset = prop_data.head(110).assign(BUSINESS_ID=lambda x: match_it(x['Owner Name 1_clean'],corps))
+# print(time.time() - start)
 
-dataset = prop_data.head(11).assign(BUSINESS_ID=lambda x: match_it(x['Owner Name 1_clean'],corps))
-print(time.time() - start)
+# # print(str(len(dataset[dataset['BUSINESS_ID'] != 'NA'])), str(len(dataset[dataset['BUSINESS_ID'] != 'NA'])/300))
+#
+# # create list to append dicts to
+# json_data = []
+# append_to_json = json_data.append
+#
+# for index,row in dataset.iterrows():
+#     # filter list of dicts for entry w Owner name
+#     filter_json_data = [obj for obj in json_data if obj['owner_name'] == row['Owner Name 1']]
+#
+#     if len(filter_json_data) > 0:
+#         pass
+#     else:
+#         prop_obj = {"property_id":row['lookup-id'],"property_real_value":row["Listed Real Value"]}
+#
+#         json_obj = {
+#             "owner_name":row['Owner Name 1'],
+#             "properties":[],
+#             "total_value":row["Listed Real Value"]
+#         }
+#
+#         if row['BUSINESS_ID'] != 'NA':
+#             json_obj['business_id'] = row['BUSINESS_ID']
+#             json_obj['principals'] = []
+#
+#             for principal in principals = list(corps_to_principals[corps_to_principals['BUSINESS_ID'] == row['BUSINESS_ID']].loc[:,'PRINCIPAL_NAME']):
+#
+#
+#
+#
+#
+#
+#     # find owner name
+#         # if property (row) already in json data, append to list
+#         # if not, create property
+#
+#     # find business id
+#
+#     # if business id not NA, find principals
+#     # if business id == NA, do nothing
+#
+#
+# # new loop to calculate property values?
+#
+#     # if row['BUSINESS_ID'] == 'NA':
+#
+#         # json_obj = {
+#         #     "owner_name":,
+#         #     "properties":[]
+#         # }
+#         #
+#         # append_to_json(json_obj)
+#         # continue
+#
