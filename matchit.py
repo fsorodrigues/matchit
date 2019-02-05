@@ -3,8 +3,8 @@ import pandas as pd
 pd.options.display.float_format = '{:.2f}'.format
 from fuzzywuzzy import fuzz
 import re
-import time
 from random import sample
+import json
 
 # define cleaning function
 def clean_it(string):
@@ -87,7 +87,7 @@ def match_it(series,dataframe):
             if is_match == False:
                 name = row['BUSINESS_NAME_clean']
 
-                if (ratio(value,name) > 90) and (set_ratio(value,name) > 93):
+                if (ratio(value,name) > 92) and (set_ratio(value,name) > 97):
                     print(value,name,'FUZZY MATCH')
                     append_it(row['BUSINESS_ID'])
                     is_match = True
@@ -110,65 +110,48 @@ corps_to_principals = pd.read_csv('./corp_to_principals.csv',low_memory=False)
 
 # run filters, set data types, and perform basic cleaning on strings
 prop_data['Owner Name 1_clean'] = prop_data['Owner Name 1'].apply(lambda x: clean_it(str(x)))
-# corps = corps[(corps['BUSINESS_STATUS'] == 'Active') & (corps['BUSINESS_TYPE'] != 'Trade Name')]
 corps['BUSINESS_NAME_clean'] = corps['BUSINESS_NAME'].apply(lambda x: clean_it(str(x)))
 
 # call function
-# start = time.time()
-dataset = prop_data.head(110).assign(BUSINESS_ID=lambda x: match_it(x['Owner Name 1_clean'],corps))
-# print(time.time() - start)
+dataset = prop_data.assign(BUSINESS_ID=lambda x: match_it(x['Owner Name 1_clean'],corps))
 
-# # print(str(len(dataset[dataset['BUSINESS_ID'] != 'NA'])), str(len(dataset[dataset['BUSINESS_ID'] != 'NA'])/300))
-#
-# # create list to append dicts to
-# json_data = []
-# append_to_json = json_data.append
-#
-# for index,row in dataset.iterrows():
-#     # filter list of dicts for entry w Owner name
-#     filter_json_data = [obj for obj in json_data if obj['owner_name'] == row['Owner Name 1']]
-#
-#     if len(filter_json_data) > 0:
-#         pass
-#     else:
-#         prop_obj = {"property_id":row['lookup-id'],"property_real_value":row["Listed Real Value"]}
-#
-#         json_obj = {
-#             "owner_name":row['Owner Name 1'],
-#             "properties":[],
-#             "total_value":row["Listed Real Value"]
-#         }
-#
-#         if row['BUSINESS_ID'] != 'NA':
-#             json_obj['business_id'] = row['BUSINESS_ID']
-#             json_obj['principals'] = []
-#
-#             for principal in principals = list(corps_to_principals[corps_to_principals['BUSINESS_ID'] == row['BUSINESS_ID']].loc[:,'PRINCIPAL_NAME']):
-#
-#
-#
-#
-#
-#
-#     # find owner name
-#         # if property (row) already in json data, append to list
-#         # if not, create property
-#
-#     # find business id
-#
-#     # if business id not NA, find principals
-#     # if business id == NA, do nothing
-#
-#
-# # new loop to calculate property values?
-#
-#     # if row['BUSINESS_ID'] == 'NA':
-#
-#         # json_obj = {
-#         #     "owner_name":,
-#         #     "properties":[]
-#         # }
-#         #
-#         # append_to_json(json_obj)
-#         # continue
-#
+# create list to append dicts to
+json_data = []
+append_to_json = json_data.append
+
+for index,row in dataset.iterrows():
+    # filter list of dicts for entry w Owner name
+    filter_json_data = [obj for obj in json_data if obj['owner_name'] == row['Owner Name 1']]
+    # create dict object for property
+    prop_obj = {"property_id":row['lookup-id'],"property_real_value":row["Listed Real Value"]}
+
+    # existing dict will receive updates
+    if len(filter_json_data) > 0:
+        filter_json_data[0]['properties'].append(prop_obj)
+
+        filter_json_data[0]['total_value'] = filter_json_data[0]['total_value'] + row["Listed Real Value"]
+
+        if row['BUSINESS_ID'] != 'NA':
+            for principal in list(corps_to_principals[corps_to_principals['BUSINESS_ID'] == row['BUSINESS_ID']].loc[:,'PRINCIPAL_NAME']):
+                if principal in filter_json_data[0]['principals']:
+                    continue
+                else:
+                    filter_json_data[0]['principals'].append(principal)
+
+    # new dict object will be appended to list
+    else:
+
+        json_obj = {
+            "owner_name":row['Owner Name 1'],
+            "properties":[prop_obj],
+            "total_value":row["Listed Real Value"]
+        }
+
+        if row['BUSINESS_ID'] != 'NA':
+            json_obj['business_id'] = row['BUSINESS_ID']
+            json_obj['principals'] = list(corps_to_principals[corps_to_principals['BUSINESS_ID'] == row['BUSINESS_ID']].loc[:,'PRINCIPAL_NAME'])
+
+        json_data.append(json_obj)
+
+with open('data.txt', 'w') as f:
+    json.dump(json_data,f,indent=4,sort_keys=True)
