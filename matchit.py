@@ -4,6 +4,7 @@ pd.options.display.float_format = '{:.2f}'.format
 from fuzzywuzzy import fuzz
 import re
 import time
+
 # define cleaning function
 def clean_it(string):
     # define replace rules
@@ -23,7 +24,7 @@ def clean_it(string):
     # create regex patterns
     pattern = re.compile('|'.join(rep.keys()))
     the = re.compile(r'\bthe\b',re.I)
-    multiple_spaces = re.compile('\s{2,}')
+    multiple_spaces = re.compile(r'\s{2,}')
 
     # run replace
     cleaned_text = pattern.sub(lambda x: replace_dict[x.group(0)],string)
