@@ -61,7 +61,7 @@ def match_it(series,dataframe):
 
         # blocking w random n-grams from string
         ngrams = make_ngrams(value,ngram_len) # create ngrams
-        ngrams = sample(ngrams,max(len(ngrams),rand_sample)) # grab random sample from ngrams
+        ngrams = sample(ngrams,min(len(ngrams),rand_sample)) # grab random sample from ngrams
         ngrams = '|'.join(ngrams) # join ngrams into single string for regex
 
         # pandas filter to create block
