@@ -61,7 +61,7 @@ def match_it(series,dataframe):
 
         # blocking w random n-grams from string
         ngrams = make_ngrams(value,ngram_len) # create ngrams
-        ngrams = sample(ngrams,rand_sample) # grab random sample from ngrams
+        ngrams = sample(ngrams,max(len(ngrams),rand_sample)) # grab random sample from ngrams
         ngrams = '|'.join(ngrams) # join ngrams into single string for regex
 
         # pandas filter to create block
@@ -87,7 +87,7 @@ def match_it(series,dataframe):
             if is_match == False:
                 name = row['BUSINESS_NAME_clean']
 
-                if (ratio(value,name) > 92) and (set_ratio(value,name) > 97):
+                if (ratio(value,name) > 93) and (set_ratio(value,name) > 96):
                     print(value,name,'FUZZY MATCH')
                     append_it(row['BUSINESS_ID'])
                     is_match = True
