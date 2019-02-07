@@ -16,7 +16,13 @@ def clean_it(string):
         '&':'',
         ',':'',
         '#':'',
-        '.':''
+        '.':'',
+        '(':'',
+        ')':'',
+        '[':'',
+        ']':'',
+        '{':'',
+        '}':''
     }
 
     # transform replace rules for regex understanting
@@ -114,6 +120,9 @@ corps['BUSINESS_NAME_clean'] = corps['BUSINESS_NAME'].apply(lambda x: clean_it(s
 
 # call function
 dataset = prop_data.assign(BUSINESS_ID=lambda x: match_it(x['Owner Name 1_clean'],corps))
+
+print("TOTAL MATCHES:",str(len(dataset[dataset['BUSINESS_ID'] != 'NA'])))
+print("EFFICIENCY:",str(len(dataset[dataset['BUSINESS_ID'] != 'NA'])/len(dataset)))
 
 # create list to append dicts to
 json_data = []
