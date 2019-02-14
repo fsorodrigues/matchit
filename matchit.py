@@ -162,5 +162,5 @@ for index,row in dataset.iterrows():
 
         json_data.append(json_obj)
 
-with open('data.txt', 'w') as f:
+with open('data.json', 'w') as f:
     json.dump(json_data,f,indent=4,sort_keys=True)
